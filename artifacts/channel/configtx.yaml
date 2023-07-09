@@ -1,0 +1,258 @@
+Organizations:
+
+    - &OrdererOrg
+        Name: OrdererOrg
+        ID: OrdererMSP
+        MSPDir: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/msp
+
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrdererMSP.admin')"
+
+    - &Hospital
+        Name: HospitalMSP
+        ID: HospitalMSP
+
+        MSPDir: ../../organisations/hospital/crypto-config/peerOrganizations/hospital.com/msp
+
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('HospitalMSP.admin', 'HospitalMSP.peer', 'HospitalMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('HospitalMSP.admin', 'HospitalMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('HospitalMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('HospitalMSP.peer')"
+
+        AnchorPeers:
+            - Host: peer0.hospital.com
+              Port: 10010
+
+    - &Insurance
+        Name: InsuranceMSP
+
+        ID: InsuranceMSP
+
+        MSPDir: ../../organisations/insurance/crypto-config/peerOrganizations/insurance.com/msp
+
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('InsuranceMSP.admin', 'InsuranceMSP.peer', 'InsuranceMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('InsuranceMSP.admin', 'InsuranceMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('InsuranceMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('InsuranceMSP.peer')"
+
+        AnchorPeers:
+            - Host: peer0.insurance.com
+              Port: 11010
+
+    - &Laboratory
+        Name: LaboratoryMSP
+
+        ID: LaboratoryMSP
+
+        MSPDir: ../../organisations/laboratory/crypto-config/peerOrganizations/laboratory.com/msp
+
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('LaboratoryMSP.admin', 'LaboratoryMSP.peer', 'LaboratoryMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('LaboratoryMSP.admin', 'LaboratoryMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('LaboratoryMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('LaboratoryMSP.peer')"
+
+        AnchorPeers:
+            - Host: peer0.laboratory.com
+              Port: 12010
+    
+    - &Pharmacy
+        Name: PharmacyMSP
+
+        ID: PharmacyMSP
+
+        MSPDir: ../../organisations/pharmacy/crypto-config/peerOrganizations/pharmacy.com/msp
+
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('PharmacyMSP.admin', 'PharmacyMSP.peer', 'PharmacyMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('PharmacyMSP.admin', 'PharmacyMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('PharmacyMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('PharmacyMSP.peer')"
+
+        AnchorPeers:
+            - Host: peer0.pharmacy.com
+              Port: 13010
+
+
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+
+    Orderer: &OrdererCapabilities
+        V2_0: true
+
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+Application: &ApplicationDefaults
+
+    Organizations:
+
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+
+    OrdererType: etcdraft
+
+    EtcdRaft:
+        Consenters:
+        - Host: orderer.orderer.com
+          Port: 6010
+          ClientTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer.orderer.com/tls/server.crt
+          ServerTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer.orderer.com/tls/server.crt
+    Addresses:
+        - orderer.orderer.com:6010
+
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+
+    Capabilities:
+        <<: *ChannelCapabilities
+
+Profiles:
+
+    BasicChannel:
+        Consortium: SampleConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Hospital
+                - *Insurance
+                - *Laboratory
+                - *Pharmacy
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+    OrdererGenesis:
+        <<: *ChannelDefaults
+        Capabilities:
+            <<: *ChannelCapabilities
+        Orderer:
+            <<: *OrdererDefaults
+            OrdererType: etcdraft
+            EtcdRaft:
+                Consenters:
+                - Host: orderer.orderer.com
+                  Port: 6010
+                  ClientTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer.orderer.com/tls/server.crt
+                  ServerTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer.orderer.com/tls/server.crt
+                - Host: orderer2.orderer.com
+                  Port: 7010
+                  ClientTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer2.orderer.com/tls/server.crt
+                  ServerTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer2.orderer.com/tls/server.crt
+                - Host: orderer3.orderer.com
+                  Port: 8010
+                  ClientTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer3.orderer.com/tls/server.crt
+                  ServerTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer3.orderer.com/tls/server.crt
+                - Host: orderer4.orderer.com
+                  Port: 9010
+                  ClientTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer4.orderer.com/tls/server.crt
+                  ServerTLSCert: ../../organisations/orderer/crypto-config/ordererOrganizations/orderer.com/orderers/orderer4.orderer.com/tls/server.crt
+            Addresses:
+                - orderer.orderer.com:6010
+                - orderer2.orderer.com:7010
+                - orderer3.orderer.com:8010
+                - orderer4.orderer.com:9010
+
+            Organizations:
+            - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            SampleConsortium:
+                Organizations:
+                - *Hospital
+                - *Insurance
+                - *Laboratory
+                - *Pharmacy

@@ -1,0 +1,173 @@
+version: "2"
+
+networks:
+  test:
+
+services:
+  # ca-org1:
+  #   image: hyperledger/fabric-ca
+  #   environment:
+  #     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+  #     - FABRIC_CA_SERVER_CA_NAME=ca.hospital.com
+  #     - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.hospital.com-cert.pem
+  #     - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/priv_sk
+  #     - FABRIC_CA_SERVER_TLS_ENABLED=true
+  #     - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-tls/tlsca.hospital.com-cert.pem
+  #     - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-tls/priv_sk
+  #   ports:
+  #     - "7054:7054"
+  #   command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+  #   volumes:
+  #     - ./crypto-config/peerOrganizations/hospital.com/ca/:/etc/hyperledger/fabric-ca-server-config
+  #     - ./crypto-config/peerOrganizations/hospital.com/tlsca/:/etc/hyperledger/fabric-ca-server-tls
+  #   container_name: ca.hospital.com
+  #   hostname: ca.hospital.com
+  #   networks:
+  #     - test
+
+
+  mysql0:
+    container_name: mysql0
+    image: mysql
+    environment:
+      - MYSQL_PASSWORD=Ron1234.
+      - MYSQL_ALLOW_EMPTY_PASSWORD=false
+      - MYSQL_RANDOM_ROOT_PASSWORD=Ron1234.
+    ports:
+      - 5984:5984
+    networks:
+      - test
+
+  mysql1:
+    container_name: mysql1
+    image: mysql
+    environment:
+      - MYSQL_PASSWORD=Ron1234.
+      - MYSQL_ALLOW_EMPTY_PASSWORD=false
+      - MYSQL_RANDOM_ROOT_PASSWORD=Ron1234.
+      
+    ports:
+      - 6984:5984
+    networks:
+      - test
+
+  peer0.hospital.com:
+    container_name: peer0.hospital.com
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=DEBUG
+      - ORDERER_GENERAL_LOGLEVEL=DEBUG
+      - CORE_PEER_LOCALMSPID=HospitalMSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=artifacts_test
+
+      - CORE_PEER_ID=peer0.hospital.com
+      - CORE_PEER_ADDRESS=peer0.hospital.com:10010
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:10010
+      - CORE_PEER_CHAINCODEADDRESS=peer0.hospital.com:10011
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:10011
+      # Peer used to bootstrap gossip within organisation
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.hospital.com:10510
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.hospital.com:10010
+
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+
+      - CORE_LEDGER_STATE_STATEDATABASE=MYSQL
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_MYSQLDBADDRESS=mysql0:5984
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_USERNAME=root
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_PASSWORD=Ron1234.
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    depends_on:
+      - mysql0
+    ports:
+      - 10010:10010
+    volumes:
+      - ./crypto-config/peerOrganizations/hospital.com/peers/peer0.hospital.com/msp:/etc/hyperledger/crypto/peer/msp
+      - ./crypto-config/peerOrganizations/hospital.com/peers/peer0.hospital.com/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
+
+  peer1.hospital.com:
+    container_name: peer1.hospital.com
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=DEBUG
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - CORE_PEER_LOCALMSPID=HospitalMSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=artifacts_test
+
+      - CORE_PEER_ID=peer1.hospital.com
+      - CORE_PEER_ADDRESS=peer1.hospital.com:10510
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:10510
+      - CORE_PEER_CHAINCODEADDRESS=peer1.hospital.com:10511
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:10511
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.hospital.com:10510
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.hospital.com:10010
+
+      - CORE_LEDGER_STATE_STATEDATABASE=MYSQL
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_MYSQLDBADDRESS=mysql1:5984
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_USERNAME=root
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_PASSWORD=Ron1234.
+      - CORE_METRICS_PROVIDER=prometheus
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    ports:
+      - 10510:10510
+    volumes:
+      - ./crypto-config/peerOrganizations/hospital.com/peers/peer1.hospital.com/msp:/etc/hyperledger/crypto/peer/msp
+      - ./crypto-config/peerOrganizations/hospital.com/peers/peer1.hospital.com/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
+
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools
+    tty: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_LOGGING_LEVEL=DEBUG
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.hospital.com:10010
+      - CORE_PEER_LOCALMSPID=HospitalMSP
+      # - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/channel/crypto-config/HospitalMSP
+
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/channel/crypto-config/peerOrganizations/hospital.com/peers/peer0.hospital.com/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/channel/crypto-config/peerOrganizations/hospital.com/peers/peer0.hospital.com/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/channel/crypto-config/peerOrganizations/hospital.com/peers/peer0.hospital.com/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/channel/crypto-config/peerOrganizations/hospital.com/users/Admin@hospital.com/msp
+
+      - CORE_CHAINCODE_KEEPALIVE=10 
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    networks:
+      - test
+    volumes:
+      - /var/run/:/host/var/run/
+      # - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+      - ./crypto-config/peerOrganizations/hospital.com/:/etc/hyperledger/channel/crypto-config/peerOrganizations/hospital.com/
+      - ./../insurance/crypto-config/peerOrganizations/insurance.com/:/etc/hyperledger/channel/crypto-config/peerOrganizations/insurance.com/
+      - ./../laboratory/crypto-config/peerOrganizations/laboratory.com/:/etc/hyperledger/channel/crypto-config/peerOrganizations/laboratory.com/
+      - ./../pharmacy/crypto-config/peerOrganizations/pharmacy.com/:/etc/hyperledger/channel/crypto-config/peerOrganizations/pharmacy.com/
+      - ./../orderer/crypto-config/ordererOrganizations/orderer.com/:/etc/hyperledger/channel/crypto-config/ordererOrganizations/orderer.com/

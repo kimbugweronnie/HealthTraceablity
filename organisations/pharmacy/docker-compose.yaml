@@ -1,0 +1,134 @@
+version: "2"
+
+networks:
+  test:
+
+services:
+  # ca-org2:
+  #   image: hyperledger/fabric-ca
+  #   environment:
+  #     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+  #     - FABRIC_CA_SERVER_CA_NAME=ca.pharmacy.com
+  #     - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.pharmacy.com-cert.pem
+  #     - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/priv_sk
+  #     - FABRIC_CA_SERVER_TLS_ENABLED=true
+  #     - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-tls/tlsca.pharmacy.com-cert.pem
+  #     - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-tls/priv_sk
+  #   ports:
+  #     - "8054:7054"
+  #   command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+  #   volumes:
+  #     - ./crypto-config/peerOrganizations/pharmacy.com/ca/:/etc/hyperledger/fabric-ca-server-config
+  #     - ./crypto-config/peerOrganizations/pharmacy.com/tlsca/:/etc/hyperledger/fabric-ca-server-tls
+  #   container_name: ca.pharmacy.com
+  #   hostname: ca.pharmacy.com
+  #   networks:
+  #     - test
+
+  mysql6:
+    container_name: mysql6
+    image: mysql
+    environment:
+     - MYSQL_PASSWORD=Ron1234.
+     - MYSQL_ALLOW_EMPTY_PASSWORD=false
+     - MYSQL_RANDOM_ROOT_PASSWORD=Ron1234.
+    ports:
+      - 11984:5984
+    networks:
+      - test
+
+  mysql7:
+    container_name: mysql7
+    image: mysql
+    environment:
+     - MYSQL_PASSWORD=Ron1234.
+     - MYSQL_ALLOW_EMPTY_PASSWORD=false
+     - MYSQL_RANDOM_ROOT_PASSWORD=Ron1234.
+    ports:
+      - 12984:5984
+    networks:
+      - test
+
+  peer0.pharmacy.com:
+    container_name: peer0.pharmacy.com
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=DEBUG
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - CORE_PEER_LOCALMSPID=PharmacyMSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=artifacts_test
+
+      - CORE_PEER_ID=peer0.pharmacy.com
+      - CORE_PEER_ADDRESS=peer0.pharmacy.com:13010
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:13010
+      - CORE_PEER_CHAINCODEADDRESS=peer0.pharmacy.com:13011
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:13011
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.pharmacy.com:13010
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.pharmacy.com:13510
+
+      - CORE_LEDGER_STATE_STATEDATABASE=MYSQL
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_MYSQLDBADDRESS=mysql6:5984
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_USERNAME=root
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_PASSWORD=Ron1234.
+      - CORE_METRICS_PROVIDER=prometheus
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    ports:
+      - 13010:13010
+    volumes:
+      - ./crypto-config/peerOrganizations/pharmacy.com/peers/peer0.pharmacy.com/msp:/etc/hyperledger/crypto/peer/msp
+      - ./crypto-config/peerOrganizations/pharmacy.com/peers/peer0.pharmacy.com/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
+
+  peer1.pharmacy.com:
+    container_name: peer1.pharmacy.com
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=DEBUG
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - CORE_PEER_LOCALMSPID=PharmacyMSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=artifacts_test
+
+      - CORE_PEER_ID=peer1.pharmacy.com
+      - CORE_PEER_ADDRESS=peer1.pharmacy.com:13510
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:13510
+      - CORE_PEER_CHAINCODEADDRESS=peer1.pharmacy.com:13511
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:13511
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.pharmacy.com:13510
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.pharmacy.com:13010
+
+      - CORE_LEDGER_STATE_STATEDATABASE=MYSQL
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_MYSQLDBADDRESS=mysql7:5984
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_USERNAME=root
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_PASSWORD=Ron1234.
+      - CORE_METRICS_PROVIDER=prometheus
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    ports:
+      - 13510:13510
+    volumes:
+      - ./crypto-config/peerOrganizations/pharmacy.com/peers/peer1.pharmacy.com/msp:/etc/hyperledger/crypto/peer/msp
+      - ./crypto-config/peerOrganizations/pharmacy.com/peers/peer1.pharmacy.com/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test

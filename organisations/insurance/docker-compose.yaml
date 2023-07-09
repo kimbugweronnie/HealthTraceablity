@@ -1,0 +1,134 @@
+version: "2"
+
+networks:
+  test:
+
+services:
+  # ca-org2:
+  #   image: hyperledger/fabric-ca
+  #   environment:
+  #     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+  #     - FABRIC_CA_SERVER_CA_NAME=ca.insurance.com
+  #     - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.insurance.com-cert.pem
+  #     - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/priv_sk
+  #     - FABRIC_CA_SERVER_TLS_ENABLED=true
+  #     - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-tls/tlsca.insurance.com-cert.pem
+  #     - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-tls/priv_sk
+  #   ports:
+  #     - "8054:7054"
+  #   command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+  #   volumes:
+  #     - ./crypto-config/peerOrganizations/insurance.com/ca/:/etc/hyperledger/fabric-ca-server-config
+  #     - ./crypto-config/peerOrganizations/insurance.com/tlsca/:/etc/hyperledger/fabric-ca-server-tls
+  #   container_name: ca.insurance.com
+  #   hostname: ca.insurance.com
+  #   networks:
+  #     - test
+
+  mysql2:
+    container_name: mysql2
+    image: mysql
+    environment:
+      - MYSQL_PASSWORD=Ron1234.
+      - MYSQL_ALLOW_EMPTY_PASSWORD=false
+      - MYSQL_RANDOM_ROOT_PASSWORD=Ron1234.
+    ports:
+      - 7984:5984
+    networks:
+      - test
+
+  mysql3:
+    container_name: mysql3
+    image: mysql
+    environment:
+      - MYSQL_PASSWORD=Ron1234.
+      - MYSQL_ALLOW_EMPTY_PASSWORD=false
+      - MYSQL_RANDOM_ROOT_PASSWORD=Ron1234.
+    ports:
+      - 8984:5984
+    networks:
+      - test
+
+  peer0.insurance.com:
+    container_name: peer0.insurance.com
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=DEBUG
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - CORE_PEER_LOCALMSPID=InsuranceMSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=artifacts_test
+
+      - CORE_PEER_ID=peer0.insurance.com
+      - CORE_PEER_ADDRESS=peer0.insurance.com:11010
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11010
+      - CORE_PEER_CHAINCODEADDRESS=peer0.insurance.com:11011
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11011
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.insurance.com:11010
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.insurance.com:11510
+
+      - CORE_LEDGER_STATE_STATEDATABASE=MYSQL
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_MYSQLDBADDRESS=mysql2:5984
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_USERNAME=root
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_PASSWORD=Ron1234.
+      - CORE_METRICS_PROVIDER=prometheus
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    ports:
+      - 11010:11010
+    volumes:
+      - ./crypto-config/peerOrganizations/insurance.com/peers/peer0.insurance.com/msp:/etc/hyperledger/crypto/peer/msp
+      - ./crypto-config/peerOrganizations/insurance.com/peers/peer0.insurance.com/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
+
+  peer1.insurance.com:
+    container_name: peer1.insurance.com
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=DEBUG
+      - ORDERER_GENERAL_LOGLEVEL=debug
+      - CORE_PEER_LOCALMSPID=InsuranceMSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=artifacts_test
+
+      - CORE_PEER_ID=peer1.insurance.com
+      - CORE_PEER_ADDRESS=peer1.insurance.com:11510
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11510
+      - CORE_PEER_CHAINCODEADDRESS=peer1.insurance.com:11511
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11511
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.insurance.com:11510
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.insurance.com:11010
+
+      - CORE_LEDGER_STATE_STATEDATABASE=MYSQL
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_MYSQLDBADDRESS=mysql3:5984
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_USERNAME=root
+      - CORE_LEDGER_STATE_MYSQLDBCONFIG_PASSWORD=Ron1234.
+      - CORE_METRICS_PROVIDER=prometheus
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    ports:
+      - 11510:11510
+    volumes:
+      - ./crypto-config/peerOrganizations/insurance.com/peers/peer1.insurance.com/msp:/etc/hyperledger/crypto/peer/msp
+      - ./crypto-config/peerOrganizations/insurance.com/peers/peer1.insurance.com/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
